@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ModeToggle } from "@/components/toggle";
 import { AvatarIcon, ChatBubbleIcon } from "@radix-ui/react-icons";
+import ProtectedRoute from "@/components/protectedRoute";
 
 export default function DashboardLayout({
   children,
@@ -51,7 +52,7 @@ export default function DashboardLayout({
                 </TooltipTrigger>
                 <TooltipContent side="right">Chat</TooltipContent>
               </Tooltip>
-              
+
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link
@@ -65,8 +66,6 @@ export default function DashboardLayout({
                 </TooltipTrigger>
                 <TooltipContent side="right">users</TooltipContent>
               </Tooltip>
-              
-              
             </nav>
             <nav className="mt-auto flex flex-col items-center gap-4 px-2 py-4">
               <Tooltip>
@@ -81,7 +80,9 @@ export default function DashboardLayout({
                 </TooltipTrigger>
                 <TooltipContent side="right">Settings</TooltipContent>
               </Tooltip>
-              <span><ModeToggle/></span>
+              <span>
+                <ModeToggle />
+              </span>
             </nav>
           </aside>
           <div className="flex flex-col  sm:pl-14">
@@ -127,7 +128,7 @@ export default function DashboardLayout({
                 </SheetContent>
               </Sheet>
             </header>
-            {children}
+            <ProtectedRoute>{children}</ProtectedRoute>
           </div>
         </div>
       </TooltipProvider>
