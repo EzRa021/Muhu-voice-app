@@ -11,9 +11,10 @@ import {
   AlertDialogContent,
   AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
-import { ref, get, update } from "firebase/database";
+import { ref, get, update, child } from "firebase/database";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { db } from "@/firebase/firebase"; // Import the initialized database
+import { useRouter } from "next/navigation"; // Import the useRouter hook
+import { db } from "@/firebase/firebase";
 import Image from 'next/image';
 
 export default function AddUser() {
@@ -22,6 +23,8 @@ export default function AddUser() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [isAdded, setIsAdded] = useState(false);
+  const router = useRouter(); // Initialize the router
 
   useEffect(() => {
     const auth = getAuth();
@@ -32,14 +35,14 @@ export default function AddUser() {
         console.error("No user is signed in");
       }
     });
-    return () => unsubscribe(); // Cleanup the listener on component unmount
+    return () => unsubscribe();
   }, []);
 
   const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    if (e.target.value.length < 3) return; // Minimum search term length
+    if (e.target.value.length < 3) return;
 
-    const usersRef = ref(db, "users");  // Use the imported `db`
+    const usersRef = ref(db, "users");
     const snapshot = await get(usersRef);
     if (snapshot.exists()) {
       const usersData = snapshot.val();
@@ -79,25 +82,49 @@ export default function AddUser() {
       timestamp: Date.now(),
     });
 
+    setIsAdded(true); // Set the button to "Added"
     setShowDialog(false);
+
+    // Navigate to the chat page with the selected user
+    router.push(`/chat/chats/room/${selectedUserId}`);
+  };
+
+  const checkIfUserAdded = async (userId) => {
+    if (!currentUser) return false;
+
+    const userChatRef = ref(db, `userChats/${currentUser.uid}/${userId}`);
+    const snapshot = await get(userChatRef);
+    return snapshot.exists();
+  };
+
+  const handleSelectUser = async ([id, user]) => {
+    setSelectedUser([id, user]);
+    const isUserAdded = await checkIfUserAdded(id);
+    setIsAdded(isUserAdded);
+    setShowDialog(true);
   };
 
   return (
-    <div className=' lg:px-10 flex items-center max-h-screen py-10'>
+    <div className='lg:px-10 flex items-center max-h-screen py-10'>
       <Command className="rounded-lg border shadow-md h-full">
-        <input className='p-3 outline-0' placeholder="Search users..." value={searchTerm} onChange={handleSearch} />
+        <input
+          className='p-3 outline-0'
+          placeholder="Search users..."
+          value={searchTerm}
+          onChange={handleSearch}
+        />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup heading="Suggestions">
             {users.map(([id, user]) => (
-              <CommandItem key={id} onSelect={() => { setSelectedUser([id, user]); setShowDialog(true); }}>
+              <CommandItem key={id} onSelect={() => handleSelectUser([id, user])}>
                 <Avatar>
                   <AvatarImage src={user.photoURL} />
                   <AvatarFallback>{user.username.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="flex justify-between items-center w-full">
                   <span>{user.username}</span>
-                  <Button>Add</Button>
+                  <Button disabled={isAdded}>{isAdded ? "Added" : "Add"}</Button>
                 </div>
               </CommandItem>
             ))}
@@ -124,8 +151,9 @@ export default function AddUser() {
                     <button
                       className="text-white py-2 px-4 uppercase rounded bg-blue-400 hover:bg-blue-500 shadow hover:shadow-lg font-medium transition transform hover:-translate-y-0.5"
                       onClick={handleAddUser}
+                      disabled={isAdded} // Disable the button if the user is already added
                     >
-                      Add Friend
+                      {isAdded ? "Added" : "Add Friend"}
                     </button>
                   </div>
                 </div>

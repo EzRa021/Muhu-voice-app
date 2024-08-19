@@ -45,7 +45,7 @@ export default function SignInForm() {
 
       await signInWithEmailAndPassword(auth, email, loginData.password);
       setLoading(false);
-      router.push("/"); // Redirect to the home page after successful login
+      router.push("/chat/chats"); // Redirect to the home page after successful login
     } catch (error) {
       setError((error as Error).message);
       setLoading(false);

@@ -6,9 +6,11 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import { Label } from "@/components/ui/label";
-import { getAuth, updateProfile, updateEmail, onAuthStateChanged, User } from "firebase/auth";
+import { getAuth, updateProfile, updateEmail, onAuthStateChanged, User, signOut } from "firebase/auth";
 import { getDatabase, ref, update, get } from "firebase/database";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage"; // Import Firebase Storage
 import { app } from "@/firebase/firebase";
+import { useRouter } from "next/navigation";
 
 export default function Settings() {
   const [user, setUser] = useState<User | null>(null);
@@ -21,14 +23,13 @@ export default function Settings() {
   });
   const [newPhoto, setNewPhoto] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const auth = getAuth(app);
 
-    // Use onAuthStateChanged to listen for authentication state changes
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
-        console.log("User is logged in:", currentUser);
         setUser(currentUser);
         setProfileData({
           username: currentUser.displayName || "",
@@ -38,27 +39,27 @@ export default function Settings() {
           photoURL: currentUser.photoURL || "",
         });
 
-        // Fetch additional profile info from Realtime Database
         const db = getDatabase(app);
         const userRef = ref(db, `users/${currentUser.uid}`);
-        get(userRef).then((snapshot) => {
-          if (snapshot.exists()) {
-            const data = snapshot.val();
-            setProfileData((prevData) => ({
-              ...prevData,
-              bio: data.bio || "",
-              language: data.language || "",
-            }));
-          }
-        }).catch((error) => {
-          console.error("Error fetching user data:", error);
-        });
+        get(userRef)
+          .then((snapshot) => {
+            if (snapshot.exists()) {
+              const data = snapshot.val();
+              setProfileData((prevData) => ({
+                ...prevData,
+                bio: data.bio || "",
+                language: data.language || "",
+              }));
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching user data:", error);
+          });
       } else {
         console.log("No user is logged in.");
       }
     });
 
-    // Cleanup the listener on component unmount
     return () => unsubscribe();
   }, []);
 
@@ -86,12 +87,12 @@ export default function Settings() {
 
     const auth = getAuth(app);
     const db = getDatabase(app);
+    const storage = getStorage(app); // Initialize Firebase Storage
     const userRef = ref(db, `users/${user.uid}`);
 
     try {
       const updates: any = {};
 
-      // Update user profile in Firebase Authentication
       if (profileData.username !== user.displayName) {
         await updateProfile(user, { displayName: profileData.username });
         console.log("Username updated successfully.");
@@ -102,15 +103,16 @@ export default function Settings() {
         console.log("Email updated successfully.");
       }
 
-      // Update photoURL if a new photo is selected (add logic to upload to Firebase Storage if needed)
       if (newPhoto) {
-        const photoURL = URL.createObjectURL(newPhoto);
-        await updateProfile(user, { photoURL });
+        const photoStorageRef = storageRef(storage, `profile_pictures/${user.uid}`);
+        await uploadBytes(photoStorageRef, newPhoto); // Upload the image to Firebase Storage
+        const photoURL = await getDownloadURL(photoStorageRef); // Get the download URL
+        await updateProfile(user, { photoURL }); // Update the user's profile with the new photo URL
         updates.photoURL = photoURL;
+        setProfileData((prevData) => ({ ...prevData, photoURL })); // Update the local state
         console.log("Profile picture updated successfully.");
       }
 
-      // Update additional profile info in Realtime Database
       updates.bio = profileData.bio;
       updates.language = profileData.language;
       await update(userRef, updates);
@@ -120,6 +122,16 @@ export default function Settings() {
       console.error("Error updating profile:", error);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    const auth = getAuth(app);
+    try {
+      await signOut(auth);
+      router.push("/auth/login");
+    } catch (error) {
+      console.error("Error logging out:", error);
     }
   };
 
@@ -164,12 +176,16 @@ export default function Settings() {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="border-t px-6 py-4">
+        <CardFooter className="border-t px-6 py-4 flex justify-between">
           <Button onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save"}
           </Button>
         </CardFooter>
       </Card>
+      {/* Logout Button */}
+      <Button variant="destructive" className="w-full" onClick={handleLogout}>
+        Logout
+      </Button>
     </div>
   );
 }

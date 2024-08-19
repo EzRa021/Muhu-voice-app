@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   LineChart,
+  LucideSettings,
   Package,
   Package2,
   PanelLeft,
@@ -26,7 +27,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <section>
+    <section className="">
       <TooltipProvider>
         <div className="flex min-h-screen  w-full flex-col bg-muted/40">
           <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col mr-10 border-r bg-background sm:flex">
@@ -95,31 +96,31 @@ export default function DashboardLayout({
                 <SheetContent side="left" className="sm:max-w-xs">
                   <nav className="grid gap-6 text-lg font-medium">
                     <Link
-                      href="#"
+                      href="/chat/chats"
                       className="group flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:text-base"
                     >
                       <Package2 className="h-5 w-5 transition-all group-hover:scale-110" />
                       <span className="sr-only">Acme Inc</span>
                     </Link>
                     <Link
-                      href="#"
+                      href="/chat/chats"
                       className="flex items-center gap-4 px-2.5 text-foreground"
                     >
-                      <Package className="h-5 w-5" />
+                      <ChatBubbleIcon className="h-5 w-5" />
                       chats
                     </Link>
                     <Link
-                      href="#"
+                      href="/chat/adduser"
                       className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
                     >
                       <Users2 className="h-5 w-5" />
-                      Customers
+                      Add-user
                     </Link>
                     <Link
-                      href="#"
+                      href="/chat/settings"
                       className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
                     >
-                      <LineChart className="h-5 w-5" />
+                      <LucideSettings className="h-5 w-5" />
                       Settings
                     </Link>
                   </nav>
