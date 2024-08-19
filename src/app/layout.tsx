@@ -4,7 +4,7 @@ import "./globals.css";
 import Providers from "./provider"; // Import the new Providers component
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/context/AuthContext";
-import ProtectedRoute from "@/components/protectedRoute";
+// import ProtectedRoute from "@/components/protectedRoute";
 
 const inter = Inter({ subsets: ["latin"] });
 

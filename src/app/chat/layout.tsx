@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ModeToggle } from "@/components/toggle";
 import { AvatarIcon, ChatBubbleIcon } from "@radix-ui/react-icons";
-import ProtectedRoute from "@/components/protectedRoute";
+import ProtectedRoute from "../../components/protectedRoute";
 
 export default function DashboardLayout({
   children,
