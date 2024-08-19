@@ -88,11 +88,11 @@ const ChatList = () => {
               <ChatListItem
                 key={chat.id}
                 id={chat.id}
-                name={chat.username}
+                name={chat?.username}
                 lastMessage={chat.lastMessage || "No messages yet"}
                 time={new Date(chat.timestamp).toLocaleTimeString()}
                 unreadCount={chat.unreadCount || 0}
-                avatarUrl={chat.photoURL || "https://randomuser.me/api/portraits/men/1.jpg"}
+                avatarUrl={chat?.photoURL || "https://randomuser.me/api/portraits/men/1.jpg"}
               />
             ))}
         </div>
