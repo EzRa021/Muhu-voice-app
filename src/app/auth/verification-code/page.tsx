@@ -1,4 +1,3 @@
-// /src/app/auth/verificationCode.tsx
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -12,7 +11,7 @@ export default function VerificationCode() {
     const [code, setCode] = useState("");
     const [email, setEmail] = useState("");
     const searchParams = useSearchParams();
-    
+
     useEffect(() => {
         const emailParam = searchParams.get('email');
         if (emailParam) {
@@ -22,7 +21,6 @@ export default function VerificationCode() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Simulate verification
         router.push(`/auth/reset-password?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`);
     };
 

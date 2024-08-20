@@ -1,4 +1,4 @@
-"use client"; // Ensure this component is treated as a client component
+"use client";
 
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getAuth, confirmPasswordReset } from 'firebase/auth'; // Import the correct function
+import { getAuth, confirmPasswordReset } from 'firebase/auth';
 
 export default function ResetPassword() {
     const [password, setPassword] = useState("");
@@ -17,11 +17,10 @@ export default function ResetPassword() {
     const searchParams = useSearchParams();
     const router = useRouter();
 
-    // Ensure oobCode is only available on the client side
     const [oobCode, setOobCode] = useState<string | null>(null);
 
     useEffect(() => {
-        setOobCode(searchParams.get('oobCode')); // Firebase password reset code
+        setOobCode(searchParams.get('oobCode'));
     }, [searchParams]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -40,10 +39,9 @@ export default function ResetPassword() {
 
         setLoading(true);
 
-        const auth = getAuth(); // Initialize auth
-
         try {
-            await confirmPasswordReset(auth, oobCode, password); // Use the correct function
+            const auth = getAuth();
+            await confirmPasswordReset(auth, oobCode, password);
             router.push('/auth/signin');
         } catch (error) {
             setError((error as Error).message);
