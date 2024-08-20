@@ -99,7 +99,7 @@ const ChatPage = () => {
     if (!currentUser) return;
 
     const websocket = new WebSocket(
-      "ws://muhu-voice-bd2fa0883b8b.herokuapp.com"
+      "wss://muhu-voice-bd2fa0883b8b.herokuapp.com"
     );
     websocket.onopen = () => setConnectionStatus("Connected");
     websocket.onerror = (error) => {
