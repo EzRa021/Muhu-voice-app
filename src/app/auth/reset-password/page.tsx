@@ -1,20 +1,13 @@
-// /src/app/auth/resetPassword.tsx
 "use client";
 
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { auth } from '@/firebase/firebase';
+import { getAuth, confirmPasswordReset } from 'firebase/auth'; // Import the correct function
 
 export default function ResetPassword() {
     const [password, setPassword] = useState("");
@@ -42,8 +35,10 @@ export default function ResetPassword() {
 
         setLoading(true);
 
+        const auth = getAuth(); // Initialize auth
+
         try {
-            await auth.confirmPasswordReset(oobCode, password);
+            await confirmPasswordReset(auth, oobCode, password); // Use the correct function
             router.push('/auth/signin');
         } catch (error) {
             setError((error as Error).message);

@@ -13,26 +13,39 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
-import { ref, get, update, child } from "firebase/database";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { useRouter } from "next/navigation"; // Import the useRouter hook
+import { ref, get, update } from "firebase/database";
+import { getAuth, onAuthStateChanged, User } from "firebase/auth";
+import { useRouter } from "next/navigation";
 import { db } from "@/firebase/firebase";
-import Image from "next/image";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter
+} from "@/components/ui/card";
 import ProtectedRoute from "@/app/protectedRoute";
 
+type UserData = {
+  username: string;
+  photoURL: string;
+  email: string;
+  bio?: string;
+};
+
+type FirebaseUser = [string, UserData];
+
 export default function AddUser() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [users, setUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [showDialog, setShowDialog] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [isAdded, setIsAdded] = useState(false);
-  const router = useRouter(); // Initialize the router
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [users, setUsers] = useState<FirebaseUser[]>([]);
+  const [selectedUser, setSelectedUser] = useState<FirebaseUser | null>(null);
+  const [showDialog, setShowDialog] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [addedUsers, setAddedUsers] = useState<Set<string>>(new Set()); // Track added users
+  const router = useRouter();
 
   useEffect(() => {
     const auth = getAuth();
@@ -47,15 +60,17 @@ export default function AddUser() {
   }, []);
 
   const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-    if (e.target.value.length < 3) return;
+    const searchValue = e.target.value;
+    setSearchTerm(searchValue);
+    if (searchValue.length < 3) return;
 
     const usersRef = ref(db, "users");
     const snapshot = await get(usersRef);
     if (snapshot.exists()) {
-      const usersData = snapshot.val();
-      const filteredUsers = Object.entries(usersData).filter(([id, user]) =>
-        user.username.toLowerCase().includes(searchTerm.toLowerCase())
+      const usersData = snapshot.val() as Record<string, UserData>;
+      const filteredUsers: FirebaseUser[] = Object.entries(usersData).filter(
+        ([, user]) =>
+          user.username.toLowerCase().includes(searchValue.toLowerCase())
       );
       setUsers(filteredUsers);
     } else {
@@ -64,15 +79,13 @@ export default function AddUser() {
   };
 
   const handleAddUser = async () => {
-    if (!currentUser) {
-      console.error("No current user found");
+    if (!currentUser || !selectedUser) {
+      console.error("No current user or selected user found");
       return;
     }
 
-    const selectedUserId = selectedUser[0];
-    const selectedUserData = selectedUser[1];
+    const [selectedUserId, selectedUserData] = selectedUser;
 
-    // Update the current user's chat list
     const userChatsRef = ref(
       db,
       `userChats/${currentUser.uid}/${selectedUserId}`
@@ -84,7 +97,6 @@ export default function AddUser() {
       timestamp: Date.now(),
     });
 
-    // Update the selected user's chat list
     const selectedUserChatsRef = ref(
       db,
       `userChats/${selectedUserId}/${currentUser.uid}`
@@ -96,14 +108,12 @@ export default function AddUser() {
       timestamp: Date.now(),
     });
 
-    setIsAdded(true); // Set the button to "Added"
+    setAddedUsers((prev) => new Set(prev).add(selectedUserId)); // Mark user as added
     setShowDialog(false);
-
-    // Navigate to the chat page with the selected user
     router.push(`/chat/chats/room/${selectedUserId}`);
   };
 
-  const checkIfUserAdded = async (userId) => {
+  const checkIfUserAdded = async (userId: string): Promise<boolean> => {
     if (!currentUser) return false;
 
     const userChatRef = ref(db, `userChats/${currentUser.uid}/${userId}`);
@@ -111,10 +121,16 @@ export default function AddUser() {
     return snapshot.exists();
   };
 
-  const handleSelectUser = async ([id, user]) => {
-    setSelectedUser([id, user]);
-    const isUserAdded = await checkIfUserAdded(id);
-    setIsAdded(isUserAdded);
+  const handleSelectUser = async (selected: FirebaseUser) => {
+    setSelectedUser(selected);
+    const isUserAdded = await checkIfUserAdded(selected[0]);
+    setAddedUsers((prev) => {
+      const newSet = new Set(prev);
+      if (isUserAdded) {
+        newSet.add(selected[0]);
+      }
+      return newSet;
+    });
     setShowDialog(true);
   };
 
@@ -123,7 +139,6 @@ export default function AddUser() {
       <div className="lg:px-10 flex items-center max-h-screen py-10">
         <Command className="rounded-lg border shadow-md h-full">
           <input
-            className="p-3 outline-0"
             placeholder="Search users..."
             value={searchTerm}
             onChange={handleSearch}
@@ -142,9 +157,9 @@ export default function AddUser() {
                   </Avatar>
                   <div className="flex justify-between items-center w-full">
                     <span>{user.username}</span>
-                    <Button disabled={isAdded}>
-                      {isAdded ? "Added" : "Add"}
-                    </Button>
+                    {addedUsers.has(id) ? (
+                      <span>Added</span>
+                    ) : null} {/* Display "Added" if user is already added */}
                   </div>
                 </CommandItem>
               ))}
@@ -155,45 +170,39 @@ export default function AddUser() {
         {selectedUser && (
           <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
             <AlertDialogContent>
-              <div className="">
-                <div className="bg-white shadow mt-24">
-                  <div className="grid grid-cols-1 md:grid-cols-3">
-                    <div className="relative">
-                      <Image
+              <Card className="w-full">
+                <CardHeader>
+                  <CardTitle>User Profile</CardTitle>
+                  <CardDescription>
+                    View and add this user to your chat list.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col items-center">
+                    <Avatar className="w-24 h-24 mb-4">
+                      <AvatarImage
                         src={selectedUser[1].photoURL}
-                        alt="Avatar"
-                        height={48}
-                        width={48}
-                        className="w-48 h-48 bg-indigo-100 mx-auto rounded-full shadow-2xl"
+                        alt={selectedUser[1].username}
                       />
-                    </div>
-                    <div className="mt-32 md:mt-0 md:justify-center">
-                      <button
-                        className="text-white py-2 px-4 uppercase rounded bg-blue-400 hover:bg-blue-500 shadow hover:shadow-lg font-medium transition transform hover:-translate-y-0.5"
-                        onClick={handleAddUser}
-                        disabled={isAdded} // Disable the button if the user is already added
-                      >
-                        {isAdded ? "Added" : "Add Friend"}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="mt-20 text-center border-b pb-12">
-                    <h1 className="text-4xl font-medium text-gray-700">
+                      <AvatarFallback>
+                        {selectedUser[1].username.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <h2 className="text-lg font-medium">
                       {selectedUser[1].username}
-                    </h1>
-                    <p className="font-light text-gray-600 mt-3">
-                      {selectedUser[1].email}
-                    </p>
-                    <p className="mt-8 text-gray-500">{selectedUser[1].bio}</p>
+                    </h2>
+                    <p className="text-muted-foreground">{selectedUser[1].bio}</p>
                   </div>
-                </div>
-              </div>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleAddUser}>
-                  Add user
-                </AlertDialogAction>
-              </AlertDialogFooter>
+                </CardContent>
+                <CardFooter>
+                  <Button
+                    onClick={handleAddUser}
+                    disabled={addedUsers.has(selectedUser[0])}
+                  >
+                    {addedUsers.has(selectedUser[0]) ? "Added" : "Add user"}
+                  </Button>
+                </CardFooter>
+              </Card>
             </AlertDialogContent>
           </AlertDialog>
         )}

@@ -1,13 +1,11 @@
-// /src/app/api/auth/resetPassword/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/firebase/firebase';
+import { getAuth, confirmPasswordReset } from 'firebase/auth'; // Correct import
 
 export async function POST(req: NextRequest) {
     try {
         const { oobCode, newPassword } = await req.json();
-
-        // Confirm the password reset using the oobCode and new password
-        await auth.confirmPasswordReset(oobCode, newPassword);
+        const auth = getAuth(); // Initialize auth
+        await confirmPasswordReset(auth, oobCode, newPassword); // Use the correct method
 
         return NextResponse.json({ message: 'Password has been reset.' }, { status: 200 });
     } catch (error) {

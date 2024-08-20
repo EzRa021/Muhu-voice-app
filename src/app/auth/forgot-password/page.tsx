@@ -1,4 +1,3 @@
-// /src/app/auth/forgotPassword.tsx
 "use client";
 
 import React, { useState } from 'react';
@@ -8,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { auth } from '@/firebase/firebase';
+import { getAuth, sendPasswordResetEmail } from 'firebase/auth'; // Import the correct function
 
 export default function ForgotPassword() {
     const [email, setEmail] = useState("");
@@ -21,8 +20,10 @@ export default function ForgotPassword() {
         setError("");
         setLoading(true);
 
+        const auth = getAuth(); // Initialize auth
+
         try {
-            await auth.sendPasswordResetEmail(email);
+            await sendPasswordResetEmail(auth, email); // Use the correct function
             router.push(`/auth/verification-code?email=${encodeURIComponent(email)}`);
         } catch (error) {
             setError((error as Error).message);

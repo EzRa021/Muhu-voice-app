@@ -2,12 +2,18 @@
 import React, { useEffect, useState } from "react";
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { getDatabase, ref, get } from "firebase/database";
-import { app } from "@/firebase/firebase"; // Your Firebase configuration file
+import { app } from "@/firebase/firebase"; 
 import ProtectedRoute from "./protectedRoute";
+
+// Define types for profile data
+interface ProfileData {
+  bio: string;
+  language: string;
+}
 
 export default function AuthCheckComponent() {
   const [user, setUser] = useState<User | null>(null);
-  const [profileData, setProfileData] = useState(null);
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -15,7 +21,6 @@ export default function AuthCheckComponent() {
 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
-        // User is logged in
         setUser(currentUser);
 
         // Fetch user profile data from Realtime Database
@@ -25,7 +30,7 @@ export default function AuthCheckComponent() {
         get(userRef)
           .then((snapshot) => {
             if (snapshot.exists()) {
-              setProfileData(snapshot.val());
+              setProfileData(snapshot.val() as ProfileData);
             } else {
               console.log("No profile data found.");
             }
@@ -36,13 +41,11 @@ export default function AuthCheckComponent() {
             setLoading(false);
           });
       } else {
-        // User is logged out
         setUser(null);
         setLoading(false);
       }
     });
 
-    // Cleanup subscription on component unmount
     return () => unsubscribe();
   }, []);
 

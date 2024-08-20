@@ -30,6 +30,8 @@ import {
 import { app } from "@/firebase/firebase";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/app/protectedRoute";
+import { toast } from "sonner";
+// import { toast } from "@/components/ui/sonner";
 
 export default function Settings() {
   const [user, setUser] = useState<User | null>(null);
@@ -120,6 +122,7 @@ export default function Settings() {
       if (profileData.email !== user.email) {
         await updateEmail(user, profileData.email);
         console.log("Email updated successfully.");
+        toast("email updated successfully")
       }
 
       if (newPhoto) {
@@ -133,6 +136,7 @@ export default function Settings() {
         updates.photoURL = photoURL;
         setProfileData((prevData) => ({ ...prevData, photoURL })); // Update the local state
         console.log("Profile picture updated successfully.");
+        toast("Profile picture updated successfully.")
       }
 
       updates.bio = profileData.bio;
@@ -142,8 +146,10 @@ export default function Settings() {
         "Additional profile information updated successfully in the database.",
         updates
       );
+      toast("Additional profile information updated successfully in the database.")
     } catch (error) {
       console.error("Error updating profile:", error);
+      toast("Error updating profile")
     } finally {
       setSaving(false);
     }
@@ -154,6 +160,7 @@ export default function Settings() {
     try {
       await signOut(auth);
       router.push("/auth/login");
+      toast("Logour Successfully")
     } catch (error) {
       console.error("Error logging out:", error);
     }
