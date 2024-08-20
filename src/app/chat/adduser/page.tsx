@@ -23,7 +23,7 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation"; // Import the useRouter hook
 import { db } from "@/firebase/firebase";
 import Image from "next/image";
-import ProtectedRoute from "@/components/protectedRoute";
+import ProtectedRoute from "@/app/protectedRoute";
 
 export default function AddUser() {
   const [searchTerm, setSearchTerm] = useState("");

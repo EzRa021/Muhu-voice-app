@@ -10,7 +10,7 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { ref, onValue, get } from "firebase/database"; // Updated to include `get`
 import { db } from "@/firebase/firebase";
 import { useQuery } from "@tanstack/react-query"; // Corrected import
-import ProtectedRoute from "@/components/protectedRoute";
+import ProtectedRoute from "@/app/protectedRoute";
 
 // Fetch user chats from Firebase
 const fetchUserChats = async ({ queryKey }) => {

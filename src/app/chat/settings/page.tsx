@@ -29,7 +29,7 @@ import {
 } from "firebase/storage"; // Import Firebase Storage
 import { app } from "@/firebase/firebase";
 import { useRouter } from "next/navigation";
-import ProtectedRoute from "@/components/protectedRoute";
+import ProtectedRoute from "@/app/protectedRoute";
 
 export default function Settings() {
   const [user, setUser] = useState<User | null>(null);

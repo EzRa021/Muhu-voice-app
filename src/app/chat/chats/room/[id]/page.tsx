@@ -11,7 +11,7 @@ import { db } from "@/firebase/firebase";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChevronLeftIcon } from "@radix-ui/react-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import ProtectedRoute from "@/components/protectedRoute";
+import ProtectedRoute from "@/app/protectedRoute";
 
 const fetchUserProfile = async ({ queryKey }) => {
   const [_, id] = queryKey;
