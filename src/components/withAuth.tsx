@@ -1,28 +1,29 @@
-// /components/withAuth.tsx
-import { useRouter } from 'next/navigation';
+import React from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useEffect } from 'react';
+import { useRouter } from 'next/router';
 
-const withAuth = (WrappedComponent: React.FC) => {
-  return (props: any) => {
-    const { user } = useAuth();
+const withAuth = (WrappedComponent: React.ComponentType) => {
+  const ComponentWithAuth = (props: any) => {
+    const { user, loading } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
-      if (!user) {
-        // If user is not authenticated, redirect to login page
-        router.push('/auth/signin');
+      if (!loading && !user) {
+        router.push('/auth/login');
       }
-    }, [user, router]);
+    }, [loading, user, router]);
 
-    // If user is authenticated, render the wrapped component
-    if (user) {
-      return <WrappedComponent {...props} />;
+    if (loading || !user) {
+      return <div>Loading...</div>;
     }
 
-    // Optionally, render a loading state while redirecting
-    return <p>Loading...</p>;
+    return <WrappedComponent {...props} />;
   };
+
+  // Add displayName for easier debugging
+  ComponentWithAuth.displayName = `withAuth(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
+
+  return ComponentWithAuth;
 };
 
 export default withAuth;
