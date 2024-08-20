@@ -10,6 +10,7 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { ref, onValue, get } from "firebase/database"; // Updated to include `get`
 import { db } from "@/firebase/firebase";
 import { useQuery } from "@tanstack/react-query"; // Corrected import
+import ProtectedRoute from "@/components/protectedRoute";
 
 // Fetch user chats from Firebase
 const fetchUserChats = async ({ queryKey }) => {
@@ -67,7 +68,8 @@ const ChatList = () => {
   });
 
   return (
-    <div className="w-full h-full static top-4 rounded-md overflow-y-auto py-2">
+    <ProtectedRoute>
+       <div className="w-full h-full static top-4 rounded-md overflow-y-auto py-2">
       <nav>
         <div className="sticky top-0 bg-muted/40 z-10">
           <div className="flex justify-between items-center py-3 px-3">
@@ -98,6 +100,8 @@ const ChatList = () => {
         </div>
       </nav>
     </div>
+    </ProtectedRoute>
+   
   );
 };
 

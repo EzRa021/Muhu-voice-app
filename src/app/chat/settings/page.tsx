@@ -2,15 +2,34 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import { Label } from "@/components/ui/label";
-import { getAuth, updateProfile, updateEmail, onAuthStateChanged, User, signOut } from "firebase/auth";
+import {
+  getAuth,
+  updateProfile,
+  updateEmail,
+  onAuthStateChanged,
+  User,
+  signOut,
+} from "firebase/auth";
 import { getDatabase, ref, update, get } from "firebase/database";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage"; // Import Firebase Storage
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+} from "firebase/storage"; // Import Firebase Storage
 import { app } from "@/firebase/firebase";
 import { useRouter } from "next/navigation";
+import ProtectedRoute from "@/components/protectedRoute";
 
 export default function Settings() {
   const [user, setUser] = useState<User | null>(null);
@@ -104,7 +123,10 @@ export default function Settings() {
       }
 
       if (newPhoto) {
-        const photoStorageRef = storageRef(storage, `profile_pictures/${user.uid}`);
+        const photoStorageRef = storageRef(
+          storage,
+          `profile_pictures/${user.uid}`
+        );
         await uploadBytes(photoStorageRef, newPhoto); // Upload the image to Firebase Storage
         const photoURL = await getDownloadURL(photoStorageRef); // Get the download URL
         await updateProfile(user, { photoURL }); // Update the user's profile with the new photo URL
@@ -116,8 +138,10 @@ export default function Settings() {
       updates.bio = profileData.bio;
       updates.language = profileData.language;
       await update(userRef, updates);
-      console.log("Additional profile information updated successfully in the database.", updates);
-
+      console.log(
+        "Additional profile information updated successfully in the database.",
+        updates
+      );
     } catch (error) {
       console.error("Error updating profile:", error);
     } finally {
@@ -136,56 +160,79 @@ export default function Settings() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Account Information Card */}
-      <Card className="w-full border border-gray-200 rounded-lg shadow dark:bg-background dark:border-gray-700">
-        <CardHeader>
-          <CardTitle>Account</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col items-center pb-6">
-            {profileData.photoURL ? (
-              <Image
-                className="w-24 h-24 mb-3 rounded-full shadow-lg"
-                width={96}
-                height={96}
-                src={profileData.photoURL}
-                alt="User image"
+    <ProtectedRoute>
+      <div className="space-y-6">
+        {/* Account Information Card */}
+        <Card className="w-full border border-gray-200 rounded-lg shadow dark:bg-background dark:border-gray-700">
+          <CardHeader>
+            <CardTitle>Account</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col items-center pb-6">
+              {profileData.photoURL ? (
+                <Image
+                  className="w-24 h-24 mb-3 rounded-full shadow-lg"
+                  width={96}
+                  height={96}
+                  src={profileData.photoURL}
+                  alt="User image"
+                />
+              ) : (
+                <div className="w-24 h-24 mb-3 rounded-full shadow-lg bg-gray-200"></div>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
               />
-            ) : (
-              <div className="w-24 h-24 mb-3 rounded-full shadow-lg bg-gray-200"></div>
-            )}
-            <input type="file" accept="image/*" onChange={handlePhotoChange} />
-          </div>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="username">Username</Label>
-              <Input id="username" value={profileData.username} onChange={handleInputChange} />
             </div>
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={profileData.email} onChange={handleInputChange} />
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  value={profileData.username}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={profileData.email}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div>
+                <Label htmlFor="bio">Bio</Label>
+                <Input
+                  id="bio"
+                  value={profileData.bio}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div>
+                <Label htmlFor="language">Language</Label>
+                <Input
+                  id="language"
+                  value={profileData.language}
+                  onChange={handleInputChange}
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="bio">Bio</Label>
-              <Input id="bio" value={profileData.bio} onChange={handleInputChange} />
-            </div>
-            <div>
-              <Label htmlFor="language">Language</Label>
-              <Input id="language" value={profileData.language} onChange={handleInputChange} />
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter className="border-t px-6 py-4 flex justify-between">
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save"}
-          </Button>
-        </CardFooter>
-      </Card>
-      {/* Logout Button */}
-      <Button variant="destructive" className="w-full" onClick={handleLogout}>
-        Logout
-      </Button>
-    </div>
+          </CardContent>
+          <CardFooter className="border-t px-6 py-4 flex justify-between">
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? "Saving..." : "Save"}
+            </Button>
+          </CardFooter>
+        </Card>
+        {/* Logout Button */}
+        <Button variant="destructive" className="w-full" onClick={handleLogout}>
+          Logout
+        </Button>
+      </div>
+    </ProtectedRoute>
   );
 }

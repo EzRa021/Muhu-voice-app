@@ -5,12 +5,13 @@ import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ChatList from "../../page";
-import { ref, push, onValue, get, set, update } from "firebase/database"; 
+import { ref, push, onValue, get, set, update } from "firebase/database";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { db } from "@/firebase/firebase"; 
+import { db } from "@/firebase/firebase";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChevronLeftIcon } from "@radix-ui/react-icons";
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import ProtectedRoute from "@/components/protectedRoute";
 
 const fetchUserProfile = async ({ queryKey }) => {
   const [_, id] = queryKey;
@@ -46,17 +47,16 @@ const ChatPage = () => {
     router.back(); // This will navigate back to the previous page
   };
 
-
   const queryClient = useQueryClient();
 
   const { data: userProfile } = useQuery({
-    queryKey: ['userProfile', id],
+    queryKey: ["userProfile", id],
     queryFn: fetchUserProfile,
     enabled: !!id,
   });
 
   const { data: messages } = useQuery({
-    queryKey: ['messages', currentUser?.uid, id],
+    queryKey: ["messages", currentUser?.uid, id],
     queryFn: fetchMessages,
     enabled: !!currentUser && !!id,
     refetchOnWindowFocus: false,
@@ -77,7 +77,9 @@ const ChatPage = () => {
   useEffect(() => {
     if (!currentUser) return;
 
-    const websocket = new WebSocket("ws://muhu-voice-bd2fa0883b8b.herokuapp.com");
+    const websocket = new WebSocket(
+      "ws://muhu-voice-bd2fa0883b8b.herokuapp.com"
+    );
     websocket.onopen = () => setConnectionStatus("Connected");
     websocket.onerror = (error) => {
       console.error("WebSocket error", error);
@@ -104,8 +106,10 @@ const ChatPage = () => {
       return;
     }
 
-    const receiverProfile = await fetchUserProfile({ queryKey: ['userProfile', id] });
-    const receiverLanguage = receiverProfile?.language || 'english';
+    const receiverProfile = await fetchUserProfile({
+      queryKey: ["userProfile", id],
+    });
+    const receiverLanguage = receiverProfile?.language || "english";
 
     const messageData = {
       sender: currentUser.uid,
@@ -120,12 +124,19 @@ const ChatPage = () => {
         const translatedMessage = event.data;
 
         // Store the original message for the sender
-        const newMessageRef = push(ref(db, `messages/${currentUser.uid}/${id}`));
+        const newMessageRef = push(
+          ref(db, `messages/${currentUser.uid}/${id}`)
+        );
         await set(newMessageRef, { ...messageData });
 
         // Store the translated message for the receiver
-        const recipientMessageRef = push(ref(db, `messages/${id}/${currentUser.uid}`));
-        await set(recipientMessageRef, { ...messageData, text: translatedMessage });
+        const recipientMessageRef = push(
+          ref(db, `messages/${id}/${currentUser.uid}`)
+        );
+        await set(recipientMessageRef, {
+          ...messageData,
+          text: translatedMessage,
+        });
 
         // Update chat metadata for both users
         const userChatRef = ref(db, `userChats/${currentUser.uid}/${id}`);
@@ -143,8 +154,8 @@ const ChatPage = () => {
         });
 
         setMessage("");
-        queryClient.invalidateQueries(['messages', currentUser?.uid, id]);
-        queryClient.invalidateQueries(['messages', id, currentUser?.uid]);
+        queryClient.invalidateQueries(["messages", currentUser?.uid, id]);
+        queryClient.invalidateQueries(["messages", id, currentUser?.uid]);
       };
     } else {
       console.error("WebSocket connection is not established");
@@ -159,19 +170,25 @@ const ChatPage = () => {
   }, [messages]);
 
   return (
- 
+    <ProtectedRoute>
       <main className="lg:grid grid-cols-[25%,75%] bg-background lg:p-4 p-0  gap-3 lg:h-screen h-full">
         <div className="bg-muted/40 lg:block hidden">
           <ChatList />
         </div>
-    
+
         <div className="flex flex-col bg-muted/40 lg:w-full lg:max-h-[620px]  rounded-md w-full h-full">
           <div className="flex justify-between sticky lg:top-0 top-14 items-center p-2 bg-background">
             <div className="flex gap-2 items-center">
-              <ChevronLeftIcon className="h-5 w-5"  onClick={goBack} />
+              <ChevronLeftIcon className="h-5 w-5" onClick={goBack} />
               <Avatar>
-                <AvatarImage src={userProfile?.photoURL || 'https://via.placeholder.com/150'} />
-                <AvatarFallback>{userProfile?.username?.charAt(0)}</AvatarFallback>
+                <AvatarImage
+                  src={
+                    userProfile?.photoURL || "https://via.placeholder.com/150"
+                  }
+                />
+                <AvatarFallback>
+                  {userProfile?.username?.charAt(0)}
+                </AvatarFallback>
               </Avatar>
               <div>
                 <p className="text-sm">{userProfile?.username}</p>
@@ -180,22 +197,28 @@ const ChatPage = () => {
             </div>
           </div>
           <div className="flex-1 overflow-y-auto p-5 max-h-full">
-            {messages && messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.sender === id ? "justify-start" : "justify-end"}`}
-              >
-                <div className="max-w-80 min-w-36 mt-4 p-3 bg-orange-400 text-white rounded-lg">
-                  <p className="text-sm">{msg.text}</p>
-                  <span className="text-[10px]">
-                    {new Date(msg.timestamp).toLocaleTimeString()}
-                  </span>
+            {messages &&
+              messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex ${
+                    msg.sender === id ? "justify-start" : "justify-end"
+                  }`}
+                >
+                  <div className="max-w-80 min-w-36 mt-4 p-3 bg-orange-400 text-white rounded-lg">
+                    <p className="text-sm">{msg.text}</p>
+                    <span className="text-[10px]">
+                      {new Date(msg.timestamp).toLocaleTimeString()}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
             <div ref={messagesEndRef}></div>
           </div>
-          <form onSubmit={handleSendMessage} className="mb-auto flex p-4 bg-muted sticky bottom-0 gap-4 border-t">
+          <form
+            onSubmit={handleSendMessage}
+            className="mb-auto flex p-4 bg-muted sticky bottom-0 gap-4 border-t"
+          >
             <Input
               value={message}
               onChange={(e) => setMessage(e.target.value)}
@@ -206,7 +229,8 @@ const ChatPage = () => {
           </form>
         </div>
       </main>
-    );
+    </ProtectedRoute>
+  );
 };
 
 export default ChatPage;

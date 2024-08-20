@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/tooltip";
 import { ModeToggle } from "@/components/toggle";
 import { AvatarIcon, ChatBubbleIcon } from "@radix-ui/react-icons";
-import ProtectedRoute from "../../components/protectedRoute";
 
 export default function DashboardLayout({
   children,
@@ -56,8 +55,7 @@ export default function DashboardLayout({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link
-                    href="/chat/adduser
-                    "
+                    href="/chat/adduser"
                     className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:text-foreground md:h-8 md:w-8"
                   >
                     <Users className="h-5 w-5" />
@@ -128,7 +126,7 @@ export default function DashboardLayout({
                 </SheetContent>
               </Sheet>
             </header>
-            <ProtectedRoute>{children}</ProtectedRoute>
+            {children}
           </div>
         </div>
       </TooltipProvider>
