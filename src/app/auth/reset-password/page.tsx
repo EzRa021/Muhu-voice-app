@@ -9,6 +9,13 @@ import { Lock } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getAuth, confirmPasswordReset } from 'firebase/auth'; // Import the correct function
 
+// Use getServerSideProps to ensure no static optimization
+export const getServerSideProps = () => {
+  return {
+    props: {}, // No props are needed, but this disables static optimization
+  };
+};
+
 export default function ResetPassword() {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
