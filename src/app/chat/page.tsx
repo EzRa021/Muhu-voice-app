@@ -56,12 +56,15 @@
 //     </div>
 //   );
 // }
-import React from 'react'
+import React from "react";
+import ProtectedRoute from "../protectedRoute";
 
 const page = () => {
   return (
-    <div>page</div>
-  )
-}
+    <ProtectedRoute>
+      <div>page</div>
+    </ProtectedRoute>
+  );
+};
 
-export default page
+export default page;

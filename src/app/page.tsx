@@ -1,75 +1,40 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { getAuth, onAuthStateChanged, User } from "firebase/auth";
-import { getDatabase, ref, get } from "firebase/database";
-import { app } from "@/firebase/firebase"; 
-import ProtectedRoute from "./protectedRoute";
-
-// Define types for profile data
-interface ProfileData {
-  bio: string;
-  language: string;
-}
+import React from "react";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { motion } from "framer-motion";
 
 export default function AuthCheckComponent() {
-  const [user, setUser] = useState<User | null>(null);
-  const [profileData, setProfileData] = useState<ProfileData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const auth = getAuth(app);
-
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-
-        // Fetch user profile data from Realtime Database
-        const db = getDatabase(app);
-        const userRef = ref(db, `users/${currentUser.uid}`);
-
-        get(userRef)
-          .then((snapshot) => {
-            if (snapshot.exists()) {
-              setProfileData(snapshot.val() as ProfileData);
-            } else {
-              console.log("No profile data found.");
-            }
-            setLoading(false);
-          })
-          .catch((error) => {
-            console.error("Error fetching user data:", error);
-            setLoading(false);
-          });
-      } else {
-        setUser(null);
-        setLoading(false);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!user) {
-    return <div>You are not logged in.</div>;
-  }
-
   return (
-    <ProtectedRoute>
-      <div>
-        <h1>Welcome, {user.displayName || "User"}!</h1>
-        <p>Email: {user.email}</p>
-        {profileData && (
-          <div>
-            <h2>Profile Data:</h2>
-            <p>Bio: {profileData.bio}</p>
-            <p>Language: {profileData.language}</p>
-          </div>
-        )}
-      </div>
-    </ProtectedRoute>
+    <div
+      className="relative flex items-center justify-center min-h-screen bg-cover bg-center"
+      style={{ backgroundImage: "url('/background.jpg')" }}
+    >
+      <div className="absolute inset-0 bg-black opacity-50"></div> {/* Dark overlay */}
+      <motion.div
+        className="relative z-10 text-center text-white px-4"
+        initial={{ opacity: 0, y: -50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1, ease: "easeOut" }}
+      >
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-wide mb-6">
+          Welcome to Muhu Voice ChatApp
+        </h1>
+        <p className="text-lg sm:text-xl md:text-2xl mb-4">
+          Your one-stop solution for all your chatting needs. Connect with friends and family like never before.
+        </p>
+        <p className="text-lg sm:text-xl md:text-2xl mb-8">
+          Secure, fast, and reliable communication.
+        </p>
+        <motion.div
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <Button className="text-lg font-bold bg-indigo-600 hover:bg-indigo-700" asChild>
+            <Link href="/auth/signin">Lets Get Started</Link>
+          </Button>
+        </motion.div>
+      </motion.div>
+    </div>
   );
 }

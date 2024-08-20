@@ -203,13 +203,13 @@ const ChatPage = () => {
 
   return (
     <ProtectedRoute>
-      <main className="lg:grid grid-cols-[25%,75%] bg-background lg:p-4 p-0 gap-3 lg:h-screen h-full">
-        <div className="bg-muted/40 lg:block hidden">
+      <main className="flex flex-row  bg-background lg:p-4 p-0 gap-3 lg:h-screen h-full max-h-screen">
+        <div className="sticky top-0 bg-muted/40 w-[40%]  lg:block hidden">
           <ChatList />
         </div>
 
-        <div className="flex flex-col bg-muted/40 lg:w-full lg:max-h-[640px] rounded-md w-full h-full">
-          <div className="flex justify-between sticky lg:top-0 top-14 items-center p-2 bg-background">
+        <div className="flex flex-col bg-muted/40 w-full  h-full rounded-md">
+          <div className="flex justify-between sticky top-0 items-center p-2 bg-background">
             <div className="flex gap-2 items-center">
               <ChevronLeftIcon className="h-5 w-5" onClick={router.back} />
               <Avatar>
@@ -248,7 +248,7 @@ const ChatPage = () => {
           </div>
           <form
             onSubmit={handleSendMessage}
-            className="mb-auto flex p-4 bg-muted sticky bottom-0 gap-4 border-t"
+            className="flex p-4 bg-muted sticky bottom-0 gap-4 border-t w-full"
           >
             <Input
               value={message}

@@ -136,9 +136,10 @@ export default function AddUser() {
 
   return (
     <ProtectedRoute>
-      <div className="lg:px-10 flex items-center max-h-screen py-10">
+      <div className="lg:px-52 px-7 flex items-center max-h-screen py-10">
         <Command className="rounded-lg border shadow-md h-full">
           <input
+          className="p-3 outline-none"
             placeholder="Search users..."
             value={searchTerm}
             onChange={handleSearch}
