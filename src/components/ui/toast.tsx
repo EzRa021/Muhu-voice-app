@@ -84,12 +84,9 @@ const ErrorIcon = () => (
 );
 
 // Toast Component
-// /components/ui/toast.tsx
-
 const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Root>,
-  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> &
-    VariantProps<typeof toastVariants>
+  ToastProps
 >(({ className, variant, title, description, ...props }, ref) => {
   return (
     <ToastPrimitives.Root
@@ -173,7 +170,12 @@ const ToastAction = React.forwardRef<
 ));
 ToastAction.displayName = ToastPrimitives.Action.displayName;
 
-type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>;
+// Define ToastProps to include title and description
+type ToastProps = React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> &
+  VariantProps<typeof toastVariants> & {
+    title?: React.ReactNode;
+    description?: React.ReactNode;
+  };
 
 type ToastActionElement = React.ReactElement<typeof ToastAction>;
 
