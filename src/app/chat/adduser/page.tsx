@@ -44,7 +44,7 @@ export default function AddUser() {
   const [selectedUser, setSelectedUser] = useState<FirebaseUser | null>(null);
   const [showDialog, setShowDialog] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [addedUsers, setAddedUsers] = useState<Set<string>>(new Set()); // Track added users
+  const [addedUsers, setAddedUsers] = useState<Set<string>>(new Set());
   const router = useRouter();
 
   useEffect(() => {
@@ -108,7 +108,7 @@ export default function AddUser() {
       timestamp: Date.now(),
     });
 
-    setAddedUsers((prev) => new Set(prev).add(selectedUserId)); // Mark user as added
+    setAddedUsers((prev) => new Set(prev).add(selectedUserId));
     setShowDialog(false);
     router.push(`/chat/chats/room/${selectedUserId}`);
   };
@@ -136,37 +136,45 @@ export default function AddUser() {
 
   return (
     <ProtectedRoute>
-      <div className="lg:px-52 px-7 flex items-center max-h-screen py-10">
-        <Command className="rounded-lg border shadow-md h-full">
-          <input
-          className="p-3 outline-none"
-            placeholder="Search users..."
-            value={searchTerm}
-            onChange={handleSearch}
-          />
-          <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup heading="Suggestions">
-              {users.map(([id, user]) => (
-                <CommandItem
-                  key={id}
-                  onSelect={() => handleSelectUser([id, user])}
-                >
-                  <Avatar>
-                    <AvatarImage src={user.photoURL} />
-                    <AvatarFallback>{user.username.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex justify-between items-center w-full">
-                    <span>{user.username}</span>
-                    {addedUsers.has(id) ? (
-                      <span>Added</span>
-                    ) : null} {/* Display "Added" if user is already added */}
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+      <div className="flex flex-col justify-between lg:px-52 px-7 mt-10 max-h-screen py-10">
+      <div className=" p-4">
+          <Button className="w-full">Add User</Button>
+        </div>
+        <div className="flex-grow">
+          <Command className="rounded-lg border shadow-md h-full">
+            <input
+              className="p-3 outline-none"
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={handleSearch}
+            />
+            <CommandList>
+              <CommandEmpty>No results found.</CommandEmpty>
+              <CommandGroup heading="Suggestions">
+                {users.map(([id, user]) => (
+                  <CommandItem
+                    key={id}
+                    onSelect={() => handleSelectUser([id, user])}
+                    className=" flex gap-3"
+                  >
+                    <Avatar>
+                      <AvatarImage src={user.photoURL} />
+                      <AvatarFallback>{user.username.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex justify-between items-center w-full">
+                      <span>{user.username}</span>
+                      {addedUsers.has(id) ? (
+                        <span>Added</span>
+                      ) : null}
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </div>
+
+        
 
         {selectedUser && (
           <AlertDialog open={showDialog} onOpenChange={setShowDialog}>

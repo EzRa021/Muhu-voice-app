@@ -2,31 +2,21 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import ChatList from "../../page";
-import { ref, push, get, set, update, onValue } from "firebase/database";
+import { saveUnsentMessage } from "@/storage/offlineStorage";
+import { ref, push, set, update, get } from "firebase/database";
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { db } from "@/firebase/firebase";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChevronLeftIcon } from "@radix-ui/react-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+// import { v4 as uuidv4 } from "uuid";
 import ProtectedRoute from "@/app/protectedRoute";
+import MessageStatusIndicator from "@/components/messageStatusIndicator";
+import ChatInput from "@/components/chatInput";
+import { UserProfile, Message } from "@/types";
 
-type Message = {
-  id: string;
-  sender: string;
-  text: string;
-  timestamp: number;
-};
-
-type UserProfile = {
-  username: string;
-  photoURL?: string;
-  language?: string;
-  unreadCount?: number;
-};
-
+// Fetch the user profile from Firebase
 const fetchUserProfile = async ({
   queryKey,
 }: {
@@ -38,18 +28,39 @@ const fetchUserProfile = async ({
   return snapshot.exists() ? (snapshot.val() as UserProfile) : null;
 };
 
+// Fetch messages from Firebase
+const fetchMessages = async ({
+  queryKey,
+}: {
+  queryKey: [string, string | undefined, string];
+}) => {
+  const [, currentUserUid, id] = queryKey;
+  const messagesRef = ref(db, `messages/${currentUserUid}/${id}`);
+  const snapshot = await get(messagesRef);
+  if (snapshot.exists()) {
+    return Object.entries(
+      snapshot.val() as Record<string, Omit<Message, "id">>
+    ).map(([key, message]) => ({
+      id: key,
+      ...message,
+    }));
+  }
+  return [];
+};
+
 const ChatPage = () => {
   const { id } = useParams() as { id: string };
-  const [message, setMessage] = useState<string>("");
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [connectionStatus, setConnectionStatus] =
     useState<string>("Connecting...");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
   const router = useRouter();
-
   const queryClient = useQueryClient();
+
+  const goBack = () => {
+    router.back();
+  };
 
   const { data: userProfile } = useQuery({
     queryKey: ["userProfile", id],
@@ -57,7 +68,12 @@ const ChatPage = () => {
     enabled: !!id,
   });
 
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { data: messages } = useQuery({
+    queryKey: ["messages", currentUser?.uid, id],
+    queryFn: fetchMessages,
+    enabled: !!currentUser && !!id,
+    refetchOnWindowFocus: false,
+  });
 
   useEffect(() => {
     const auth = getAuth();
@@ -70,30 +86,6 @@ const ChatPage = () => {
     });
     return () => unsubscribe();
   }, []);
-
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const messagesRef = ref(db, `messages/${currentUser.uid}/${id}`);
-    const unsubscribe = onValue(messagesRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const messagesData = Object.entries(
-          snapshot.val() as Record<string, Omit<Message, "id">>
-        ).map(([key, message]) => ({
-          id: key,
-          ...message,
-        }));
-        setMessages(messagesData);
-        queryClient.invalidateQueries({
-          queryKey: ["messages", currentUser.uid, id],
-        });
-      } else {
-        setMessages([]);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [currentUser, id, queryClient]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -114,84 +106,82 @@ const ChatPage = () => {
     };
   }, [id, currentUser]);
 
-  const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!message.trim()) {
-      console.warn("Empty message not sent");
-      return;
-    }
-
-    if (!currentUser) {
-      console.error("No current user found");
-      return;
-    }
-
-    const receiverProfile = await fetchUserProfile({
-      queryKey: ["userProfile", id],
-    });
-    const receiverLanguage = receiverProfile?.language || "english";
-
-    const messageData = {
-      sender: currentUser.uid,
-      text: message,
-      timestamp: Date.now(),
-    };
+  const sendMessage = async (message: Message) => {
+    // Optimistically update the UI
+    queryClient.setQueryData<Message[]>(
+      ["messages", currentUser?.uid, id],
+      (oldMessages = []) => [...oldMessages, message]
+    );
 
     if (ws) {
-      ws.send(JSON.stringify({ message, lang: receiverLanguage }));
-
-      ws.onmessage = async (event) => {
-        const translatedMessage = event.data as string;
-
-        // Store the original message for the sender
-        const newMessageRef = push(
-          ref(db, `messages/${currentUser.uid}/${id}`)
+      try {
+        ws.send(
+          JSON.stringify({
+            message: message.text,
+            lang: userProfile?.language || "english",
+          })
         );
-        await set(newMessageRef, { ...messageData });
+        ws.onmessage = async (event) => {
+          const translatedMessage = event.data as string;
+          message.status = "delivered";
 
-        // Store the translated message for the receiver
-        const recipientMessageRef = push(
-          ref(db, `messages/${id}/${currentUser.uid}`)
+          const newMessageRef = push(
+            ref(db, `messages/${currentUser?.uid}/${id}`)
+          );
+          await set(newMessageRef, { ...message });
+
+          const recipientMessageRef = push(
+            ref(db, `messages/${id}/${currentUser?.uid}`)
+          );
+          await set(recipientMessageRef, {
+            ...message,
+            text: translatedMessage,
+          });
+
+          const userChatRef = ref(db, `userChats/${currentUser?.uid}/${id}`);
+          const recipientChatRef = ref(
+            db,
+            `userChats/${id}/${currentUser?.uid}`
+          );
+
+          await update(userChatRef, {
+            lastMessage: message.text,
+            timestamp: message.timestamp,
+          });
+
+          await update(recipientChatRef, {
+            lastMessage: translatedMessage,
+            timestamp: message.timestamp,
+            unreadCount: (userProfile?.unreadCount || 0) + 1,
+          });
+
+          queryClient.invalidateQueries({
+            queryKey: ["messages", currentUser?.uid, id],
+          });
+          queryClient.invalidateQueries({
+            queryKey: ["messages", id, currentUser?.uid],
+          });
+        };
+      } catch (error) {
+        console.error("Error sending message:", error);
+        message.status = "failed";
+        await saveUnsentMessage(message);
+
+        queryClient.setQueryData<Message[]>(
+          ["messages", currentUser?.uid, id],
+          (oldMessages = []) =>
+            oldMessages.map((msg) => (msg.id === message.id ? message : msg))
         );
-        await set(recipientMessageRef, {
-          ...messageData,
-          text: translatedMessage,
-        });
-
-        // Update chat metadata for both users
-        const userChatRef = ref(db, `userChats/${currentUser.uid}/${id}`);
-        const recipientChatRef = ref(db, `userChats/${id}/${currentUser.uid}`);
-
-        await update(userChatRef, {
-          lastMessage: message,
-          timestamp: messageData.timestamp,
-        });
-
-        await update(recipientChatRef, {
-          lastMessage: translatedMessage,
-          timestamp: messageData.timestamp,
-          unreadCount: (receiverProfile?.unreadCount || 0) + 1,
-        });
-
-        setMessage("");
-
-        // Ensure the query keys are correct and invalidate them
-        if (currentUser?.uid && id) {
-          queryClient.invalidateQueries({
-            queryKey: ["messages", currentUser.uid, id],
-          });
-          queryClient.invalidateQueries({
-            queryKey: ["messages", id, currentUser.uid],
-          });
-
-          queryClient.invalidateQueries({
-            queryKey: ["userChats", currentUser.uid],
-          });
-        }
-      };
+      }
     } else {
-      console.error("WebSocket connection is not established");
+      message.status = "offline";
+      await saveUnsentMessage(message);
+
+      queryClient.setQueryData<Message[]>(
+        ["messages", currentUser?.uid, id],
+        (oldMessages = []) =>
+          oldMessages.map((msg) => (msg.id === message.id ? message : msg))
+      );
     }
   };
 
@@ -203,15 +193,15 @@ const ChatPage = () => {
 
   return (
     <ProtectedRoute>
-      <main className="flex flex-row  bg-background lg:p-4 p-0 gap-3 lg:h-screen h-full max-h-screen">
-        <div className="sticky top-0 bg-muted/40 w-[40%]  lg:block hidden">
+      <main className="lg:grid grid-cols-[25%,75%] bg-background lg:p-4 p-0 gap-3 lg:h-screen h-full">
+        <div className="bg-muted/40 lg:block hidden">
           <ChatList />
         </div>
 
-        <div className="flex flex-col bg-muted/40 w-full  h-full rounded-md">
-          <div className="flex justify-between sticky top-0 items-center p-2 bg-background">
+        <div className="flex flex-col bg-muted/40 lg:w-full lg:max-h-[640px] rounded-md w-full h-full">
+          <div className="flex justify-between sticky lg:top-0 top-14 items-center p-2 bg-background">
             <div className="flex gap-2 items-center">
-              <ChevronLeftIcon className="h-5 w-5" onClick={router.back} />
+              <ChevronLeftIcon className="h-5 w-5" onClick={goBack} />
               <Avatar>
                 <AvatarImage
                   src={
@@ -228,36 +218,39 @@ const ChatPage = () => {
               </div>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-5 max-h-full">
-            {messages.map((msg: Message) => (
-              <div
-                key={msg.id}
-                className={`flex ${
-                  msg.sender === id ? "justify-start" : "justify-end"
-                }`}
-              >
-                <div className="max-w-80 min-w-36 mt-4 p-3 bg-orange-400 text-white rounded-lg">
-                  <p className="text-sm">{msg.text}</p>
-                  <span className="text-[10px]">
-                    {new Date(msg.timestamp).toLocaleTimeString()}
-                  </span>
+          <div className=" overflow-y-auto p-5 lg:mt-0 mt-10 h-full">
+            {messages &&
+              messages.map((msg: Message) => (
+                <div
+                  key={msg.id}
+                  className={`flex ${
+                    msg.sender === id ? "justify-start" : "justify-end"
+                  }`}
+                >
+                  <div
+                    className={`lg:max-w-80 max-w-72 min-w-36 mt-4 p-2 ${
+                      msg.sender === id ? "bg-lime-500" : "bg-orange-400"
+                    }  text-white rounded-lg`}
+                  >
+                    <p className="text-sm">{msg.text}</p>
+                    <div className=" flex items-center  justify-end"
+                    >
+                      <span className="text-[10px]">
+                        {new Date(msg.timestamp).toLocaleTimeString()}
+                      </span>
+                      <MessageStatusIndicator status={msg.status} />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
             <div ref={messagesEndRef}></div>
           </div>
-          <form
-            onSubmit={handleSendMessage}
-            className="flex p-4 bg-muted sticky bottom-0 gap-4 border-t w-full"
-          >
-            <Input
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Type your message"
-              className="flex-1"
-            />
-            <Button type="submit">Send</Button>
-          </form>
+          <ChatInput
+            currentUserUid={currentUser?.uid || ""}
+            recipientId={id}
+            sendMessage={sendMessage}
+            websocket={ws}
+          />
         </div>
       </main>
     </ProtectedRoute>

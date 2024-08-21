@@ -29,9 +29,9 @@ export default function DashboardLayout({
   return (
     <section className="">
       <TooltipProvider>
-        <div className="flex min-h-screen  w-full flex-col bg-muted/40">
+        <div className="flex min-h-screen w-full flex-col bg-muted/40">
           <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col mr-10 border-r bg-background sm:flex">
-            <nav className="flex flex-col items-center gap-4 px-2 py-4">
+            <nav className="flex flex-col  items-center gap-4 px-2 py-4">
               <Link
                 href="#"
                 className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
@@ -84,7 +84,7 @@ export default function DashboardLayout({
             </nav>
           </aside>
           <div className="flex flex-col  sm:pl-14">
-            <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+            <header className="fixed right-0 left-0 top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
               <Sheet>
                 <SheetTrigger asChild>
                   <Button size="icon" variant="outline" className="sm:hidden">

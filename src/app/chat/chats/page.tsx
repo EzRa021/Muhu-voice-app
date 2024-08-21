@@ -53,7 +53,7 @@ const ChatListItem = ({
 }: ChatListItemProps) => (
   <Link
     href={`/chat/chats/room/${id}`}
-    className="flex items-center gap-3 p-3 hover:bg-muted/10 transition"
+    className="flex items-center  gap-3 p-3 hover:bg-muted/10 transition"
   >
    
 
@@ -67,7 +67,7 @@ const ChatListItem = ({
         <h2 className="text-sm font-medium text-primary">{name}</h2>
         <span className="text-xs text-muted-foreground">{time}</span>
       </div>
-      <p className="text-xs text-muted-foreground truncate">{lastMessage}</p>
+      <p className="text-xs text-muted-foreground w-24 lg:w-32 truncate">{lastMessage}</p>
     </div>
     {unreadCount && unreadCount > 0 && (
       <Badge className="ml-2 h-6 w-6 flex items-center justify-center rounded-full text-xs">
