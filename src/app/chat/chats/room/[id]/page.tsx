@@ -218,7 +218,7 @@ const ChatPage = () => {
               </div>
             </div>
           </div>
-          <div className=" overflow-y-auto p-5 lg:mt-0 mt-10 h-full">
+          <div className=" overflow-y-auto p-5 lg:mb-0 mb-14 lg:mt-0 mt-10 h-full">
             {messages &&
               messages.map((msg: Message) => (
                 <div
