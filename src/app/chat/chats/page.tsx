@@ -1,27 +1,18 @@
+// src/components/ChatList.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
-
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { UserPlus } from "lucide-react";
-import {
-  getAuth,
-  onAuthStateChanged,
-  User as FirebaseUser,
-} from "firebase/auth";
-import { ref, onValue } from "firebase/database"; // Use `onValue` for real-time updates
+import { getAuth, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
+import { ref, onValue, get, update } from "firebase/database";
 import { db } from "@/firebase/firebase";
 import { useQueryClient } from "@tanstack/react-query";
 import ProtectedRoute from "@/app/protectedRoute";
 
-// Define the types for chat data
 type Chat = {
   id: string;
   username: string;
@@ -31,17 +22,6 @@ type Chat = {
   photoURL?: string;
 };
 
-// Define the props type for ChatListItem
-type ChatListItemProps = {
-  id: string;
-  name: string;
-  lastMessage: string;
-  time: string;
-  unreadCount?: number;
-  avatarUrl: string;
-  letter?:string;
-};
-
 const ChatListItem = ({
   id,
   name,
@@ -49,19 +29,21 @@ const ChatListItem = ({
   time,
   unreadCount,
   avatarUrl,
-  letter
-}: ChatListItemProps) => (
-  <Link
-    href={`/chat/chats/room/${id}`}
-    className="flex items-center  gap-3 p-3 hover:bg-muted/10 transition"
-  >
-   
-
+  letter,
+}: {
+  id: string;
+  name: string;
+  lastMessage: string;
+  time: string;
+  unreadCount?: number;
+  avatarUrl: string;
+  letter?: string;
+}) => (
+  <Link href={`/chat/chats/room/${id}`} className="flex items-center gap-3 p-3 hover:bg-muted/10 transition">
     <Avatar>
       <AvatarImage src={avatarUrl} />
       <AvatarFallback>{letter}</AvatarFallback>
     </Avatar>
- 
     <div className="flex-1 border-b pb-3">
       <div className="flex justify-between">
         <h2 className="text-sm font-medium text-primary">{name}</h2>
@@ -79,7 +61,7 @@ const ChatListItem = ({
 
 const ChatList = () => {
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
-  const [chats, setChats] = useState<Chat[]>([]); // Use state to store chats
+  const [chats, setChats] = useState<Chat[]>([]);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -94,32 +76,47 @@ const ChatList = () => {
     if (!currentUser) return;
 
     const userChatsRef = ref(db, `userChats/${currentUser.uid}`);
-    const unsubscribe = onValue(userChatsRef, (snapshot) => {
+    const unsubscribe = onValue(userChatsRef, async (snapshot) => {
       if (snapshot.exists()) {
-        const chatsData = Object.entries(
-          snapshot.val() as Record<string, Omit<Chat, "id">>
-        ).map(([id, chat]) => ({
-          id,
-          ...chat,
-        }));
+        const chatsData = Object.entries(snapshot.val() as Record<string, Omit<Chat, "id">>)
+          .map(([id, chat]) => ({ id, ...chat }));
+
+        // Check for profile updates for each user in the chat list
+        for (const chat of chatsData) {
+          const userProfileRef = ref(db, `users/${chat.id}`);
+          onValue(userProfileRef, (userSnapshot) => {
+            if (userSnapshot.exists()) {
+              const userProfile = userSnapshot.val();
+              setChats((prevChats) =>
+                prevChats.map((c) =>
+                  c.id === chat.id
+                    ? {
+                        ...c,
+                        username: userProfile.username || "Unknown User",
+                        photoURL: userProfile.photoURL || c.photoURL,
+                      }
+                    : c
+                )
+              );
+            }
+          });
+        }
+
         setChats(chatsData);
-        // Corrected code snippet for query invalidation
-        queryClient.invalidateQueries({
-          queryKey: ["userChats", currentUser.uid],
-        });
+        queryClient.invalidateQueries({ queryKey: ["userChats", currentUser.uid] });
       } else {
         setChats([]);
       }
     });
 
-    return () => unsubscribe(); // Cleanup listener on unmount
+    return () => unsubscribe();
   }, [currentUser, queryClient]);
 
   return (
     <ProtectedRoute>
-      <div className="h-full  max-w-auto rounded-md overflow-y-auto py-2">
+      <div className="h-full max-w-auto rounded-md overflow-y-auto py-2">
         <nav>
-          <div className="sticky top-0 bg-muted/40 z-10">
+          <div className="lg:mt-0 mt-14 n  bg-muted/40 z-10">
             <div className="flex justify-between items-center py-3 px-3">
               <h1 className="text-2xl">Chats</h1>
               <Link href="/chat/adduser">
@@ -141,11 +138,8 @@ const ChatList = () => {
                 lastMessage={chat.lastMessage || "No messages yet"}
                 time={new Date(chat.timestamp).toLocaleTimeString()}
                 unreadCount={chat.unreadCount || 0}
-                avatarUrl={
-                  chat.photoURL ||
-                  "https://randomuser.me/api/portraits/men/1.jpg"
-                }
-                letter={chat.username.charAt(0)}
+                avatarUrl={chat.photoURL || "https://randomuser.me/api/portraits/men/1.jpg"}
+                letter={chat?.username?.charAt(0)}
               />
             ))}
           </div>

@@ -1,10 +1,10 @@
 // src/components/chatInput.tsx
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useQueryClient } from "@tanstack/react-query";
-import { saveUnsentMessage } from "@/storage/offlineStorage";
-import { Message } from "@/types";
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useQueryClient } from '@tanstack/react-query';
+import { saveUnsentMessage } from '@/storage/offlineStorage';
+import { Message } from '@/types';
 
 type ChatInputProps = {
   currentUserUid: string;
@@ -13,13 +13,8 @@ type ChatInputProps = {
   websocket: WebSocket | null;
 };
 
-const ChatInput: React.FC<ChatInputProps> = ({
-  currentUserUid,
-  recipientId,
-  sendMessage,
-  websocket,
-}) => {
-  const [message, setMessage] = useState<string>("");
+const ChatInput: React.FC<ChatInputProps> = ({ currentUserUid, recipientId, sendMessage, websocket }) => {
+  const [message, setMessage] = useState<string>('');
   const queryClient = useQueryClient();
 
   const handleSendMessage = async () => {
@@ -30,35 +25,30 @@ const ChatInput: React.FC<ChatInputProps> = ({
       sender: currentUserUid,
       text: message,
       timestamp: Date.now(),
-      status: "sending",
+      status: websocket && websocket.readyState === WebSocket.OPEN ? 'sending' : 'offline',
     };
 
     sendMessage(newMessage);
-    setMessage("");
+    setMessage('');
 
-    // Cache the message if offline
-    if (!navigator.onLine || !websocket) {
-      newMessage.status = "offline";
+    if (newMessage.status === 'offline') {
       await saveUnsentMessage(newMessage);
     }
 
-    queryClient.invalidateQueries({
-      queryKey: ["messages", currentUserUid, recipientId],
-    });
+    queryClient.invalidateQueries({ queryKey: ["messages", currentUserUid, recipientId] });
   };
 
   return (
-    <div className="bg-muted fixed lg:block  bottom-0  w-[100%] ">
-      <div className="flex mx-4 my-5 gap-4  ">
-        <Input
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Type your message"
-        />
-        <Button onClick={handleSendMessage}>Send</Button>
-      </div>
+    // <div className=" ">
+    <div className="flex gap-4  mx-4 my-5">
+      <Input value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type your message" />
+      <Button onClick={handleSendMessage} disabled={!message.trim()}>Send</Button>
     </div>
+    // </div>
   );
 };
 
 export default ChatInput;
+
+
+      

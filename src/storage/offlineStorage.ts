@@ -1,28 +1,29 @@
 // src/storage/offlineStorage.ts
 import { Message } from '@/types';
-import localForage from 'localforage';
 
-const unsentMessagesStore = localForage.createInstance({
-  name: 'unsentMessages',
-});
-
-// offlineStorage.ts
 export const saveUnsentMessage = async (message: Message) => {
   try {
-    const unsentMessages = JSON.parse(localStorage.getItem("unsentMessages") || "[]");
+    const unsentMessages = JSON.parse(localStorage.getItem('unsentMessages') || '[]') as Message[];
     unsentMessages.push(message);
-    localStorage.setItem("unsentMessages", JSON.stringify(unsentMessages));
+    localStorage.setItem('unsentMessages', JSON.stringify(unsentMessages));
   } catch (error) {
-    console.error("Error saving unsent message:", error);
+    console.error('Failed to save unsent message', error);
   }
 };
 
-
 export const getUnsentMessages = async (): Promise<Message[]> => {
-  return (await unsentMessagesStore.getItem<Message[]>('messages')) || [];
+  try {
+    return JSON.parse(localStorage.getItem('unsentMessages') || '[]') as Message[];
+  } catch (error) {
+    console.error('Failed to retrieve unsent messages', error);
+    return [];
+  }
 };
 
-export const removeUnsentMessage = async (id: string) => {
-  const existingMessages = (await getUnsentMessages()).filter(message => message.id !== id);
-  await unsentMessagesStore.setItem('messages', existingMessages);
+export const clearUnsentMessages = async () => {
+  try {
+    localStorage.removeItem('unsentMessages');
+  } catch (error) {
+    console.error('Failed to clear unsent messages', error);
+  }
 };

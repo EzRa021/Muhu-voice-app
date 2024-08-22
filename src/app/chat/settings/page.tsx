@@ -160,7 +160,7 @@ export default function Settings() {
     try {
       await signOut(auth);
       router.push("/auth/login");
-      toast("Logour Successfully")
+      toast("Logout Successfully")
     } catch (error) {
       console.error("Error logging out:", error);
     }
