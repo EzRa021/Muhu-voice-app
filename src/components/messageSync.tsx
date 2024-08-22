@@ -1,6 +1,6 @@
 // src/components/messageSync.ts
 import { useEffect } from 'react';
-import { getUnsentMessages, removeUnsentMessage } from '@/storage/offlineStorage';
+import { getUnsentMessages, clearUnsentMessages } from '@/storage/offlineStorage';
 import { Message } from '@/types';
 
 type MessageSyncProps = {
@@ -15,7 +15,7 @@ const MessageSync: React.FC<MessageSyncProps> = ({ websocket, sendMessage }) => 
         const unsentMessages = await getUnsentMessages();
         for (const message of unsentMessages) {
           sendMessage(message);
-          await removeUnsentMessage(message.id);
+          await clearUnsentMessages(message.id);
         }
       }
     };

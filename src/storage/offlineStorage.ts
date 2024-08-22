@@ -20,10 +20,12 @@ export const getUnsentMessages = async (): Promise<Message[]> => {
   }
 };
 
-export const clearUnsentMessages = async () => {
+export const clearUnsentMessages = async (id: string) => {
   try {
-    localStorage.removeItem('unsentMessages');
+    const unsentMessages = JSON.parse(localStorage.getItem('unsentMessages') || '[]') as Message[];
+    const updatedMessages = unsentMessages.filter(message => message.id !== id);
+    localStorage.setItem('unsentMessages', JSON.stringify(updatedMessages));
   } catch (error) {
-    console.error('Failed to clear unsent messages', error);
+    console.error('Failed to clear specific unsent message', error);
   }
 };
