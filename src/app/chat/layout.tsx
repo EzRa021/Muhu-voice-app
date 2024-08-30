@@ -7,6 +7,7 @@ import {
   Package2,
   PanelLeft,
   Settings,
+  User,
   Users,
   Users2,
 } from "lucide-react";
@@ -58,11 +59,24 @@ export default function DashboardLayout({
                     href="/chat/adduser"
                     className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:text-foreground md:h-8 md:w-8"
                   >
-                    <Users className="h-5 w-5" />
-                    <span className="sr-only">Users</span>
+                    <User className="h-5 w-5" />
+                    <span className="sr-only">Add user</span>
                   </Link>
                 </TooltipTrigger>
-                <TooltipContent side="right">users</TooltipContent>
+                <TooltipContent side="right">Add User</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    href="/chat/create-group"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:text-foreground md:h-8 md:w-8"
+                  >
+                    <Users className="h-5 w-5" />
+                    <span className="sr-only">Create-group</span>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">create-group</TooltipContent>
               </Tooltip>
             </nav>
             <nav className="mt-auto flex flex-col items-center gap-4 px-2 py-4">
@@ -112,8 +126,15 @@ export default function DashboardLayout({
                       href="/chat/adduser"
                       className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
                     >
-                      <Users2 className="h-5 w-5" />
+                      <User className="h-5 w-5" />
                       Add-user
+                    </Link>
+                    <Link
+                      href="/chat/create-group"
+                      className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
+                    >
+                      <Users className="h-5 w-5" />
+                      Create-group
                     </Link>
                     <Link
                       href="/chat/settings"

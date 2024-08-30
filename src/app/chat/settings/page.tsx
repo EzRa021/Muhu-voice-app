@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -14,36 +13,20 @@ import Image from "next/image";
 import { Label } from "@/components/ui/label";
 import {
   getAuth,
-  updateProfile,
-  updateEmail,
   onAuthStateChanged,
   User,
+  updateProfile,
   signOut,
 } from "firebase/auth";
 import { getDatabase, ref, update, get } from "firebase/database";
-import {
-  getStorage,
-  ref as storageRef,
-  uploadBytes,
-  getDownloadURL,
-} from "firebase/storage"; // Import Firebase Storage
 import { app } from "@/firebase/firebase";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/app/protectedRoute";
 import { toast } from "sonner";
-// import { toast } from "@/components/ui/sonner";
 
 export default function Settings() {
   const [user, setUser] = useState<User | null>(null);
-  const [profileData, setProfileData] = useState({
-    username: "",
-    email: "",
-    bio: "",
-    language: "",
-    photoURL: "",
-  });
-  const [newPhoto, setNewPhoto] = useState<File | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [language, setLanguage] = useState<string>("");
   const router = useRouter();
 
   useEffect(() => {
@@ -52,13 +35,6 @@ export default function Settings() {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        setProfileData({
-          username: currentUser.displayName || "",
-          email: currentUser.email || "",
-          bio: "",
-          language: "",
-          photoURL: currentUser.photoURL || "",
-        });
 
         const db = getDatabase(app);
         const userRef = ref(db, `users/${currentUser.uid}`);
@@ -66,11 +42,7 @@ export default function Settings() {
           .then((snapshot) => {
             if (snapshot.exists()) {
               const data = snapshot.val();
-              setProfileData((prevData) => ({
-                ...prevData,
-                bio: data.bio || "",
-                language: data.language || "",
-              }));
+              setLanguage(data.language || "");
             }
           })
           .catch((error) => {
@@ -84,18 +56,8 @@ export default function Settings() {
     return () => unsubscribe();
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setProfileData((prevData) => ({
-      ...prevData,
-      [id]: value,
-    }));
-  };
-
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setNewPhoto(e.target.files[0]);
-    }
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLanguage(e.target.value);
   };
 
   const handleSave = async () => {
@@ -104,54 +66,15 @@ export default function Settings() {
       return;
     }
 
-    setSaving(true);
-
-    const auth = getAuth(app);
     const db = getDatabase(app);
-    const storage = getStorage(app); // Initialize Firebase Storage
     const userRef = ref(db, `users/${user.uid}`);
 
     try {
-      const updates: any = {};
-
-      if (profileData.username !== user.displayName) {
-        await updateProfile(user, { displayName: profileData.username });
-        console.log("Username updated successfully.");
-      }
-
-      if (profileData.email !== user.email) {
-        await updateEmail(user, profileData.email);
-        console.log("Email updated successfully.");
-        toast("email updated successfully")
-      }
-
-      if (newPhoto) {
-        const photoStorageRef = storageRef(
-          storage,
-          `profile_pictures/${user.uid}`
-        );
-        await uploadBytes(photoStorageRef, newPhoto); // Upload the image to Firebase Storage
-        const photoURL = await getDownloadURL(photoStorageRef); // Get the download URL
-        await updateProfile(user, { photoURL }); // Update the user's profile with the new photo URL
-        updates.photoURL = photoURL;
-        setProfileData((prevData) => ({ ...prevData, photoURL })); // Update the local state
-        console.log("Profile picture updated successfully.");
-        toast("Profile picture updated successfully.")
-      }
-
-      updates.bio = profileData.bio;
-      updates.language = profileData.language;
-      await update(userRef, updates);
-      console.log(
-        "Additional profile information updated successfully in the database.",
-        updates
-      );
-      toast("Additional profile information updated successfully in the database.")
+      await update(userRef, { language });
+      toast("Language updated successfully.");
     } catch (error) {
-      console.error("Error updating profile:", error);
-      toast("Error updating profile")
-    } finally {
-      setSaving(false);
+      console.error("Error updating language:", error);
+      toast("Error updating language.");
     }
   };
 
@@ -160,7 +83,7 @@ export default function Settings() {
     try {
       await signOut(auth);
       router.push("/auth/login");
-      toast("Logout Successfully")
+      toast("Logout Successfully");
     } catch (error) {
       console.error("Error logging out:", error);
     }
@@ -176,65 +99,41 @@ export default function Settings() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col items-center pb-6">
-              {profileData.photoURL ? (
+              {user?.photoURL ? (
                 <Image
                   className="w-24 h-24 mb-3 rounded-full shadow-lg"
                   width={96}
                   height={96}
-                  src={profileData.photoURL}
+                  src={user.photoURL}
                   alt="User image"
                 />
               ) : (
                 <div className="w-24 h-24 mb-3 rounded-full shadow-lg bg-gray-200"></div>
               )}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoChange}
+              <h2 className="text-lg font-medium">{user?.displayName}</h2>
+            </div>
+            <div>
+              <Label htmlFor="username">username</Label>
+              <Input
+                id="username"
+                
+                disabled
               />
             </div>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  value={profileData.username}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={profileData.email}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div>
-                <Label htmlFor="bio">Bio</Label>
-                <Input
-                  id="bio"
-                  value={profileData.bio}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div>
-                <Label htmlFor="language">Language</Label>
-                <Input
-                  id="language"
-                  value={profileData.language}
-                  onChange={handleInputChange}
-                />
-              </div>
+            <div>
+              <Label htmlFor="language">Language</Label>
+              <Input
+                id="language"
+                value={language}
+                onChange={handleLanguageChange}
+              />
             </div>
           </CardContent>
-          <CardFooter className="border-t px-6 py-4 flex justify-between">
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? "Saving..." : "Save"}
-            </Button>
-          </CardFooter>
         </Card>
+        {/* Save Button */}
+        <Button onClick={handleSave} className="w-full">
+          Save
+        </Button>
         {/* Logout Button */}
         <Button variant="destructive" className="w-full" onClick={handleLogout}>
           Logout

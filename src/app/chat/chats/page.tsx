@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { UserPlus } from "lucide-react";
 import { getAuth, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
-import { ref, onValue, get, update } from "firebase/database";
+import { ref, onValue } from "firebase/database";
 import { db } from "@/firebase/firebase";
 import { useQueryClient } from "@tanstack/react-query";
 import ProtectedRoute from "@/app/protectedRoute";
@@ -81,27 +81,6 @@ const ChatList = () => {
         const chatsData = Object.entries(snapshot.val() as Record<string, Omit<Chat, "id">>)
           .map(([id, chat]) => ({ id, ...chat }));
 
-        // Check for profile updates for each user in the chat list
-        for (const chat of chatsData) {
-          const userProfileRef = ref(db, `users/${chat.id}`);
-          onValue(userProfileRef, (userSnapshot) => {
-            if (userSnapshot.exists()) {
-              const userProfile = userSnapshot.val();
-              setChats((prevChats) =>
-                prevChats.map((c) =>
-                  c.id === chat.id
-                    ? {
-                        ...c,
-                        username: userProfile.username || "Unknown User",
-                        photoURL: userProfile.photoURL || c.photoURL,
-                      }
-                    : c
-                )
-              );
-            }
-          });
-        }
-
         setChats(chatsData);
         queryClient.invalidateQueries({ queryKey: ["userChats", currentUser.uid] });
       } else {
@@ -116,7 +95,7 @@ const ChatList = () => {
     <ProtectedRoute>
       <div className="h-full max-w-auto rounded-md overflow-y-auto py-2">
         <nav>
-          <div className="lg:mt-0 mt-14 n  bg-muted/40 z-10">
+          <div className="lg:mt-0 mt-14 bg-muted/40 z-10">
             <div className="flex justify-between items-center py-3 px-3">
               <h1 className="text-2xl">Chats</h1>
               <Link href="/chat/adduser">
@@ -129,19 +108,28 @@ const ChatList = () => {
               <Input type="search" placeholder="Search" />
             </div>
           </div>
-          <div className="overflow-auto">
-            {chats.map((chat) => (
-              <ChatListItem
-                key={chat.id}
-                id={chat.id}
-                name={chat.username}
-                lastMessage={chat.lastMessage || "No messages yet"}
-                time={new Date(chat.timestamp).toLocaleTimeString()}
-                unreadCount={chat.unreadCount || 0}
-                avatarUrl={chat.photoURL || "https://randomuser.me/api/portraits/men/1.jpg"}
-                letter={chat?.username?.charAt(0)}
-              />
-            ))}
+          <div className="overflow-auto px-3 pb-3">
+            {chats.length > 0 ? (
+              chats.map((chat) => (
+                <ChatListItem
+                  key={chat.id}
+                  id={chat.id}
+                  name={chat.username}
+                  lastMessage={chat.lastMessage || "No messages yet"}
+                  time={new Date(chat.timestamp).toLocaleTimeString()}
+                  unreadCount={chat.unreadCount || 0}
+                  avatarUrl={chat.photoURL || "https://randomuser.me/api/portraits/men/1.jpg"}
+                  letter={chat?.username?.charAt(0)}
+                />
+              ))
+            ) : (
+              <div className="text-center h-full flex flex-col justify-center items-center text-muted-foreground mt-10">
+                <p className=" tex-4xl font-medium ">No users yet.</p>
+                <Link href="/chat/adduser" className=" mt-5 text-blue-500 underline">
+                  Add a user
+                </Link>
+              </div>
+            )}
           </div>
         </nav>
       </div>

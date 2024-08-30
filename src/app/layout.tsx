@@ -23,9 +23,9 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <Providers>
+                <Toaster />
             {/* <ProtectedRoute> */}
             {children}
-            <Toaster />
             {/* </ProtectedRoute> */}
           </Providers>
         </AuthProvider>

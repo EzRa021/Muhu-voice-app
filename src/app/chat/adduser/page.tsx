@@ -1,3 +1,4 @@
+// src/pages/chat/adduser.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -25,15 +26,16 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter
+  CardFooter,
 } from "@/components/ui/card";
 import ProtectedRoute from "@/app/protectedRoute";
 
 type UserData = {
-  username: string;
-  photoURL: string;
-  email: string;
+  username?: string;
+  photoURL?: string;
+  email?: string;
   bio?: string;
+  language?: string; // For future language update
 };
 
 type FirebaseUser = [string, UserData];
@@ -70,7 +72,7 @@ export default function AddUser() {
       const usersData = snapshot.val() as Record<string, UserData>;
       const filteredUsers: FirebaseUser[] = Object.entries(usersData).filter(
         ([, user]) =>
-          user.username.toLowerCase().includes(searchValue.toLowerCase())
+          user.username?.toLowerCase().includes(searchValue.toLowerCase())
       );
       setUsers(filteredUsers);
     } else {
@@ -86,24 +88,14 @@ export default function AddUser() {
 
     const [selectedUserId, selectedUserData] = selectedUser;
 
+    // Add the user to the current user's chat list
     const userChatsRef = ref(
       db,
       `userChats/${currentUser.uid}/${selectedUserId}`
     );
     await update(userChatsRef, {
-      username: selectedUserData.username,
+      username: selectedUserData.username || "Unknown User",
       photoURL: selectedUserData.photoURL || "",
-      lastMessage: "",
-      timestamp: Date.now(),
-    });
-
-    const selectedUserChatsRef = ref(
-      db,
-      `userChats/${selectedUserId}/${currentUser.uid}`
-    );
-    await update(selectedUserChatsRef, {
-      username: currentUser.displayName || "Unknown User",
-      photoURL: currentUser.photoURL || "",
       lastMessage: "",
       timestamp: Date.now(),
     });
@@ -137,7 +129,7 @@ export default function AddUser() {
   return (
     <ProtectedRoute>
       <div className="flex flex-col justify-between lg:px-52 px-7 mt-10 max-h-screen py-10">
-      <div className=" p-4">
+        <div className="p-4">
           <Button className="w-full">Add User</Button>
         </div>
         <div className="flex-grow">
@@ -155,17 +147,15 @@ export default function AddUser() {
                   <CommandItem
                     key={id}
                     onSelect={() => handleSelectUser([id, user])}
-                    className=" flex gap-3"
+                    className="flex gap-3"
                   >
                     <Avatar>
                       <AvatarImage src={user.photoURL} />
-                      <AvatarFallback>{user.username.charAt(0)}</AvatarFallback>
+                      <AvatarFallback>{user.username?.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex justify-between items-center w-full">
-                      <span>{user.username}</span>
-                      {addedUsers.has(id) ? (
-                        <span>Added</span>
-                      ) : null}
+                      <span>{user.username || "Unknown User"}</span>
+                      {addedUsers.has(id) ? <span>Added</span> : null}
                     </div>
                   </CommandItem>
                 ))}
@@ -173,8 +163,6 @@ export default function AddUser() {
             </CommandList>
           </Command>
         </div>
-
-        
 
         {selectedUser && (
           <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
@@ -191,14 +179,14 @@ export default function AddUser() {
                     <Avatar className="w-24 h-24 mb-4">
                       <AvatarImage
                         src={selectedUser[1].photoURL}
-                        alt={selectedUser[1].username}
+                        alt={selectedUser[1].username || "Unknown User"}
                       />
                       <AvatarFallback>
-                        {selectedUser[1].username.charAt(0)}
+                        {selectedUser[1].username?.charAt(0) || "?"}
                       </AvatarFallback>
                     </Avatar>
                     <h2 className="text-lg font-medium">
-                      {selectedUser[1].username}
+                      {selectedUser[1].username || "Unknown User"}
                     </h2>
                     <p className="text-muted-foreground">{selectedUser[1].bio}</p>
                   </div>

@@ -2,6 +2,7 @@ import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import { getAuth, Auth } from "firebase/auth";
 import { getDatabase, Database } from "firebase/database";
 import { getFunctions, Functions } from "firebase/functions";
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDWM2qqcRFELPlB0C1FrU2LTH_6KuDIL-g",
@@ -25,4 +26,5 @@ if (!getApps().length) {
 export const auth: Auth = getAuth(app);
 export const db: Database = getDatabase(app);
 export const functions: Functions = getFunctions(app);
+export const storage = getStorage(app)
 export { app };
