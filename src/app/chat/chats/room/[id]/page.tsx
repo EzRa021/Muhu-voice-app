@@ -406,13 +406,13 @@ const ChatPage = () => {
               )}
               {audioBlob && (
                 <>
-                  <video autoPlay muted loop className="w-20 h-16 bg-none">
+                  {/* <video autoPlay muted loop className="w-20 h-16 bg-none">
                     <source
                       src="\vecteezy_audio-spectrum-animation_38835278.mp4"
                       type="video/mp4"
                     />
                     Your browser does not support the video tag.
-                  </video>
+                  </video> */}
 
                   <button
                     className="p-4 rounded flex justify-center items-center bg-black"
